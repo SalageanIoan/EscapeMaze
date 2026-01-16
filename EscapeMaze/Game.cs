@@ -13,12 +13,12 @@ public class Game : GameWindow
     public Game(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings)
         : base(gameWindowSettings, nativeWindowSettings)
     {
+        UpdateFrequency = 60;
     }
 
     protected override void OnLoad()
     {
         base.OnLoad();
-        Console.WriteLine("OnLoad - Initializing game");
 
         _currentScene = new MenuScene();
         _currentScene.Initialize(Size.X, Size.Y);

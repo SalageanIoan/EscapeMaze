@@ -83,3 +83,27 @@ public class Camera
         _up = Vector3.Normalize(Vector3.Cross(_right, _front));
     }
 }
+
+public readonly struct BoundingBox
+{
+    public readonly Vector3 Min;
+    public readonly Vector3 Max;
+
+    public BoundingBox(Vector3 min, Vector3 max)
+    {
+        Min = min;
+        Max = max;
+    }
+}
+
+public readonly struct Ray
+{
+    public readonly Vector3 Origin;
+    public readonly Vector3 Direction;
+
+    public Ray(Vector3 origin, Vector3 direction)
+    {
+        Origin = origin;
+        Direction = direction;
+    }
+}

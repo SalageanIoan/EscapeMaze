@@ -5,11 +5,12 @@ namespace EscapeMaze.Rendering;
 
 public static class ObjLoader
 {
-    public static float[] LoadObj(string filePath, Vector3 defaultColor)
+    public static float[] LoadObj(string filePath)
     {
         var vertices = new List<Vector3>();
+        var texCoords = new List<Vector2>();
         var normals = new List<Vector3>();
-        var faces = new List<(int v, int vn)>();
+        var faces = new List<(int v, int vt, int vn)>();
 
         var lines = File.ReadAllLines(filePath);
 
@@ -30,6 +31,12 @@ public static class ObjLoader
                 float z = float.Parse(parts[3], CultureInfo.InvariantCulture);
                 vertices.Add(new Vector3(x, y, z));
             }
+            else if (parts[0] == "vt" && parts.Length >= 3)
+            {
+                float u = float.Parse(parts[1], CultureInfo.InvariantCulture);
+                float v = float.Parse(parts[2], CultureInfo.InvariantCulture);
+                texCoords.Add(new Vector2(u, v));
+            }
             else if (parts[0] == "vn" && parts.Length >= 4)
             {
                 float x = float.Parse(parts[1], CultureInfo.InvariantCulture);
@@ -39,16 +46,19 @@ public static class ObjLoader
             }
             else if (parts[0] == "f" && parts.Length >= 4)
             {
-                var faceVertices = new List<(int v, int vn)>();
+                var faceVertices = new List<(int v, int vt, int vn)>();
                 
                 for (int i = 1; i < parts.Length; i++)
                 {
                     var indices = parts[i].Split('/');
                     int vIndex = int.Parse(indices[0]) - 1;
+                    int vtIndex = indices.Length > 1 && !string.IsNullOrEmpty(indices[1])
+                        ? int.Parse(indices[1]) - 1
+                        : -1;
                     int vnIndex = indices.Length > 2 && !string.IsNullOrEmpty(indices[2]) 
                         ? int.Parse(indices[2]) - 1 
                         : -1;
-                    faceVertices.Add((vIndex, vnIndex));
+                    faceVertices.Add((vIndex, vtIndex, vnIndex));
                 }
 
                 for (int i = 1; i < faceVertices.Count - 1; i++)
@@ -66,49 +76,49 @@ public static class ObjLoader
         {
             var vertex = vertices[face.v];
             
-            vertex *= 0.01f;
-            
             vertexData.Add(vertex.X);
             vertexData.Add(vertex.Y);
             vertexData.Add(vertex.Z);
             
-            Vector3 color = defaultColor;
-            if (face.vn >= 0 && face.vn < normals.Count)
+            // Add default color
+            vertexData.Add(1.0f);
+            vertexData.Add(1.0f);
+            vertexData.Add(1.0f);
+
+            if (face.vt >= 0 && face.vt < texCoords.Count)
             {
-                var normal = normals[face.vn];
-                color = new Vector3(
-                    Math.Abs(normal.X),
-                    Math.Abs(normal.Y),
-                    Math.Abs(normal.Z)
-                );
+                var texCoord = texCoords[face.vt];
+                vertexData.Add(texCoord.X);
+                vertexData.Add(texCoord.Y);
             }
-            
-            vertexData.Add(color.X);
-            vertexData.Add(color.Y);
-            vertexData.Add(color.Z);
+            else
+            {
+                vertexData.Add(0.0f);
+                vertexData.Add(0.0f);
+            }
         }
 
-        Console.WriteLine($"OBJ loaded: {vertices.Count} vertices, {faces.Count} face vertices");
-        
         return vertexData.ToArray();
     }
 
-    public static void ConvertObjToVertexFile(string objFilePath, string outputFilePath, Vector3 defaultColor)
+    public static void ConvertObjToVertexFile(string objFilePath, string outputFilePath)
     {
-        var vertexData = LoadObj(objFilePath, defaultColor);
+        var vertexData = LoadObj(objFilePath);
         
         var lines = new List<string>();
-        for (int i = 0; i < vertexData.Length; i += 6)
+        for (int i = 0; i < vertexData.Length; i += 8)
         {
             lines.Add($"{vertexData[i].ToString(CultureInfo.InvariantCulture)} " +
                      $"{vertexData[i + 1].ToString(CultureInfo.InvariantCulture)} " +
                      $"{vertexData[i + 2].ToString(CultureInfo.InvariantCulture)} " +
                      $"{vertexData[i + 3].ToString(CultureInfo.InvariantCulture)} " +
                      $"{vertexData[i + 4].ToString(CultureInfo.InvariantCulture)} " +
-                     $"{vertexData[i + 5].ToString(CultureInfo.InvariantCulture)}");
+                     $"{vertexData[i + 5].ToString(CultureInfo.InvariantCulture)} " +
+                     $"{vertexData[i + 6].ToString(CultureInfo.InvariantCulture)} " +
+                     $"{vertexData[i + 7].ToString(CultureInfo.InvariantCulture)}");
         }
         
         File.WriteAllLines(outputFilePath, lines);
-        Console.WriteLine($"Converted OBJ to vertex file: {outputFilePath}");
     }
 }
+

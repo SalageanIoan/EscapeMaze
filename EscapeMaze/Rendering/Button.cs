@@ -1,8 +1,7 @@
 using OpenTK.Mathematics;
 using OpenTK.Graphics.OpenGL4;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
+using StbImageSharp;
+using System.IO;
 
 namespace EscapeMaze.Rendering;
 
@@ -84,15 +83,13 @@ void main()
         int texture = GL.GenTexture();
         GL.BindTexture(TextureTarget.Texture2D, texture);
 
-        using (var image = Image.Load<Rgba32>(path))
+        StbImage.stbi_set_flip_vertically_on_load(1);
+
+        using (Stream stream = File.OpenRead(path))
         {
-            image.Mutate(x => x.Flip(FlipMode.Vertical));
-
-            var pixels = new byte[4 * image.Width * image.Height];
-            image.CopyPixelDataTo(pixels);
-
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width, image.Height, 0,
-                PixelFormat.Rgba, PixelType.UnsignedByte, pixels);
+            ImageResult image = ImageResult.FromStream(stream, ColorComponents.RedGreenBlueAlpha);
+            
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, image.Width, image.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, image.Data);
         }
 
         GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
@@ -102,6 +99,7 @@ void main()
 
         return texture;
     }
+
 
     public void UpdateHoverState(float mouseX, float mouseY)
     {

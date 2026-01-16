@@ -14,7 +14,6 @@ public class Level1Scene : IScene
     private InputHandler? _inputHandler;
     private Shader? _shader;
     private GameObject? _cube;
-    private GameObject? _floor;
     private bool _shouldChangeScene;
     private IScene? _nextScene;
 
@@ -22,9 +21,10 @@ public class Level1Scene : IScene
     {
         GL.ClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         GL.Enable(EnableCap.DepthTest);
+        GL.Enable(EnableCap.Blend);
+        GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
         _camera = new Camera(Vector3.UnitZ * 3, windowWidth / (float)windowHeight);
-        Console.WriteLine($"Camera initialized at position: {_camera.Position}");
 
         _inputHandler = new InputHandler(_camera);
 
@@ -32,8 +32,7 @@ public class Level1Scene : IScene
         string fragmentShaderSource = ShaderLoader.LoadShaderSource("Shaders/fragment_shader.txt");
         _shader = new Shader(vertexShaderSource, fragmentShaderSource);
 
-        _cube = new GameObject("Data/cube_vertices.txt", Vector3.Zero);
-        _floor = new GameObject("Data/floor_vertices.txt", Vector3.Zero);
+        _cube = new GameObject("Data/cube_vertices.txt", Vector3.Zero, "Data/UI/key.png");
     }
 
     public void Update(FrameEventArgs args, KeyboardState keyboardState, bool isFocused)
@@ -50,18 +49,87 @@ public class Level1Scene : IScene
         }
 
         _inputHandler.ProcessKeyboard(keyboardState, (float)args.Time);
+
+        if (_inputHandler.EPressed && _cube != null)
+        {
+            var ray = new Ray(_camera.Position, _camera.Front);
+            var boundingBox = new BoundingBox(_cube.Position - new Vector3(0.5f), _cube.Position + new Vector3(0.5f));
+            if (Intersects(ray, boundingBox))
+            {
+                _cube.IsRotating = true;
+                _cube.IsFadingOut = true;
+            }
+        }
+
+        _cube?.Update((float)args.Time);
+
+        if (_cube?.Alpha == 0)
+        {
+            _cube.Dispose();
+            _cube = null;
+        }
+    }
+
+    private bool Intersects(Ray ray, BoundingBox box)
+    {
+        float tmin = (box.Min.X - ray.Origin.X) / ray.Direction.X;
+        float tmax = (box.Max.X - ray.Origin.X) / ray.Direction.X;
+
+        if (tmin > tmax)
+        {
+            (tmin, tmax) = (tmax, tmin);
+        }
+
+        float tymin = (box.Min.Y - ray.Origin.Y) / ray.Direction.Y;
+        float tymax = (box.Max.Y - ray.Origin.Y) / ray.Direction.Y;
+
+        if (tymin > tymax)
+        {
+            (tymin, tymax) = (tymax, tymin);
+        }
+
+        if ((tmin > tymax) || (tymin > tmax))
+        {
+            return false;
+        }
+
+        if (tymin > tmin)
+        {
+            tmin = tymin;
+        }
+
+        if (tymax < tmax)
+        {
+            tmax = tymax;
+        }
+
+        float tzmin = (box.Min.Z - ray.Origin.Z) / ray.Direction.Z;
+        float tzmax = (box.Max.Z - ray.Origin.Z) / ray.Direction.Z;
+
+        if (tzmin > tzmax)
+        {
+            (tzmin, tzmax) = (tzmax, tzmin);
+        }
+
+        if ((tmin > tzmax) || (tzmin > tmax))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public void Render(FrameEventArgs args)
     {
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        if (_shader == null || _camera == null || _cube == null || _floor == null)
+        if (_shader == null || _camera == null)
         {
             return;
         }
 
         _shader.Use();
+        _shader.SetInt("texture0", 0);
 
         Matrix4 view = _camera.GetViewMatrix();
         Matrix4 projection = _camera.GetProjectionMatrix();
@@ -69,11 +137,14 @@ public class Level1Scene : IScene
         _shader.SetMatrix4("view", view);
         _shader.SetMatrix4("projection", projection);
 
-        _shader.SetMatrix4("model", _cube.GetModelMatrix());
-        _cube.Draw();
-
-        _shader.SetMatrix4("model", _floor.GetModelMatrix());
-        _floor.Draw();
+        if (_cube != null)
+        {
+            _cube.Texture?.Use();
+            _shader.SetBool("useTexture", true);
+            _shader.SetMatrix4("model", _cube.GetModelMatrix());
+            _shader.SetFloat("alpha", _cube.Alpha);
+            _cube.Draw();
+        }
     }
 
     public void Resize(int width, int height)
@@ -97,7 +168,6 @@ public class Level1Scene : IScene
     public void Unload()
     {
         _cube?.Dispose();
-        _floor?.Dispose();
         _shader?.Dispose();
     }
 

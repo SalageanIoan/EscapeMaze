@@ -15,6 +15,8 @@ public class InputHandler
     private bool _sPressed;
     private bool _dPressed;
 
+    public bool EPressed { get; private set; }
+
     public InputHandler(Camera camera)
     {
         _camera = camera;
@@ -22,18 +24,18 @@ public class InputHandler
 
     public void ProcessKeyboard(KeyboardState input, float deltaTime)
     {
+        EPressed = input.IsKeyDown(Keys.E);
+
         if (input.IsKeyDown(Keys.W))
         {
             if (!_wPressed)
             {
-                Console.WriteLine("W key pressed - Moving forward");
                 _wPressed = true;
             }
             _camera.Position += _camera.Front * _cameraSpeed * deltaTime;
         }
         else if (_wPressed)
         {
-            Console.WriteLine("W key released");
             _wPressed = false;
         }
 
@@ -41,14 +43,12 @@ public class InputHandler
         {
             if (!_sPressed)
             {
-                Console.WriteLine("S key pressed - Moving backward");
                 _sPressed = true;
             }
             _camera.Position -= _camera.Front * _cameraSpeed * deltaTime;
         }
         else if (_sPressed)
         {
-            Console.WriteLine("S key released");
             _sPressed = false;
         }
 
@@ -56,14 +56,12 @@ public class InputHandler
         {
             if (!_aPressed)
             {
-                Console.WriteLine("A key pressed - Moving left");
                 _aPressed = true;
             }
             _camera.Position -= _camera.Right * _cameraSpeed * deltaTime;
         }
         else if (_aPressed)
         {
-            Console.WriteLine("A key released");
             _aPressed = false;
         }
 
@@ -71,14 +69,12 @@ public class InputHandler
         {
             if (!_dPressed)
             {
-                Console.WriteLine("D key pressed - Moving right");
                 _dPressed = true;
             }
             _camera.Position += _camera.Right * _cameraSpeed * deltaTime;
         }
         else if (_dPressed)
         {
-            Console.WriteLine("D key released");
             _dPressed = false;
         }
     }
@@ -88,7 +84,6 @@ public class InputHandler
         if (_lastMousePosition == null)
         {
             _lastMousePosition = new Vector2(mouseX, mouseY);
-            Console.WriteLine($"Mouse control initialized at position: ({mouseX:F2}, {mouseY:F2})");
         }
         else
         {
@@ -98,8 +93,6 @@ public class InputHandler
 
             _camera.Yaw += deltaX * _mouseSensitivity;
             _camera.Pitch -= deltaY * _mouseSensitivity;
-
-            Console.WriteLine($"Mouse moved - Delta: ({deltaX:F2}, {deltaY:F2}), Yaw: {_camera.Yaw:F2}, Pitch: {_camera.Pitch:F2}");
         }
     }
 }

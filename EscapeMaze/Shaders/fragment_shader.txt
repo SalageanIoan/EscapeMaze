@@ -1,8 +1,21 @@
 #version 330 core
-in vec3 ourColor;
+in vec3 vertexColor;
+in vec2 texCoord;
+
 out vec4 FragColor;
+
+uniform float alpha;
+uniform sampler2D texture0;
+uniform bool useTexture;
 
 void main()
 {
-    FragColor = vec4(ourColor, 1.0);
+    if(useTexture)
+    {
+        FragColor = texture(texture0, texCoord) * vec4(1.0, 1.0, 1.0, alpha);
+    }
+    else
+    {
+        FragColor = vec4(vertexColor, alpha);
+    }
 }

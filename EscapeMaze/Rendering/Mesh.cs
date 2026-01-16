@@ -22,7 +22,7 @@ public class Mesh : IDisposable
         
         if (Path.GetExtension(filePath).ToLower() == ".obj")
         {
-            vertices = ObjLoader.LoadObj(filePath, new Vector3(0.55f, 0.35f, 0.2f));
+            vertices = ObjLoader.LoadObj(filePath);
         }
         else
         {
@@ -42,7 +42,7 @@ public class Mesh : IDisposable
 
             vertices = verticesList.ToArray();
         }
-        _vertexCount = vertices.Length / 6;
+        _vertexCount = vertices.Length / 8;
 
         _vao = GL.GenVertexArray();
         GL.BindVertexArray(_vao);
@@ -51,15 +51,16 @@ public class Mesh : IDisposable
         GL.BindBuffer(BufferTarget.ArrayBuffer, _vbo);
         GL.BufferData(BufferTarget.ArrayBuffer, vertices.Length * sizeof(float), vertices, BufferUsageHint.StaticDraw);
 
-        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+        GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 0);
         GL.EnableVertexAttribArray(0);
 
-        GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+        GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 8 * sizeof(float), 3 * sizeof(float));
         GL.EnableVertexAttribArray(1);
+        
+        GL.VertexAttribPointer(2, 2, VertexAttribPointerType.Float, false, 8 * sizeof(float), 6 * sizeof(float));
+        GL.EnableVertexAttribArray(2);
 
         GL.BindVertexArray(0);
-
-        Console.WriteLine($"Mesh loaded from {Path.GetFileName(filePath)} with {_vertexCount} vertices");
     }
 
     public void Draw()
