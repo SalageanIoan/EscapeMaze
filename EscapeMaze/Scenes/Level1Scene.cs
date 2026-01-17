@@ -14,6 +14,7 @@ public class Level1Scene : IScene
     private InputHandler? _inputHandler;
     private Shader? _shader;
     private GameObject? _cube;
+    private GameObject? _floor;
     private bool _shouldChangeScene;
     private IScene? _nextScene;
 
@@ -33,6 +34,7 @@ public class Level1Scene : IScene
         _shader = new Shader(vertexShaderSource, fragmentShaderSource);
 
         _cube = new GameObject("Data/cube_vertices.txt", Vector3.Zero, "Data/UI/key.png");
+        _floor = new GameObject("Data/floor_vertices.txt", Vector3.Zero, "Data/UI/floor.png");
     }
 
     public void Update(FrameEventArgs args, KeyboardState keyboardState, bool isFocused)
@@ -62,6 +64,7 @@ public class Level1Scene : IScene
         }
 
         _cube?.Update((float)args.Time);
+        _floor?.Update((float)args.Time);
 
         if (_cube?.Alpha == 0)
         {
@@ -137,6 +140,15 @@ public class Level1Scene : IScene
         _shader.SetMatrix4("view", view);
         _shader.SetMatrix4("projection", projection);
 
+        if (_floor != null)
+        {
+            _floor.Texture?.Use();
+            _shader.SetBool("useTexture", true);
+            _shader.SetMatrix4("model", _floor.GetModelMatrix());
+            _shader.SetFloat("alpha", _floor.Alpha);
+            _floor.Draw();
+        }
+
         if (_cube != null)
         {
             _cube.Texture?.Use();
@@ -168,6 +180,7 @@ public class Level1Scene : IScene
     public void Unload()
     {
         _cube?.Dispose();
+        _floor?.Dispose();
         _shader?.Dispose();
     }
 

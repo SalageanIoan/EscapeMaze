@@ -26,13 +26,21 @@ public class InputHandler
     {
         EPressed = input.IsKeyDown(Keys.E);
 
+        Vector3 front = _camera.Front;
+        front.Y = 0;
+        front = Vector3.Normalize(front);
+
+        Vector3 right = _camera.Right;
+        right.Y = 0;
+        right = Vector3.Normalize(right);
+
         if (input.IsKeyDown(Keys.W))
         {
             if (!_wPressed)
             {
                 _wPressed = true;
             }
-            _camera.Position += _camera.Front * _cameraSpeed * deltaTime;
+            _camera.Position += front * _cameraSpeed * deltaTime;
         }
         else if (_wPressed)
         {
@@ -45,7 +53,7 @@ public class InputHandler
             {
                 _sPressed = true;
             }
-            _camera.Position -= _camera.Front * _cameraSpeed * deltaTime;
+            _camera.Position -= front * _cameraSpeed * deltaTime;
         }
         else if (_sPressed)
         {
@@ -58,7 +66,7 @@ public class InputHandler
             {
                 _aPressed = true;
             }
-            _camera.Position -= _camera.Right * _cameraSpeed * deltaTime;
+            _camera.Position -= right * _cameraSpeed * deltaTime;
         }
         else if (_aPressed)
         {
@@ -71,7 +79,7 @@ public class InputHandler
             {
                 _dPressed = true;
             }
-            _camera.Position += _camera.Right * _cameraSpeed * deltaTime;
+            _camera.Position += right * _cameraSpeed * deltaTime;
         }
         else if (_dPressed)
         {
