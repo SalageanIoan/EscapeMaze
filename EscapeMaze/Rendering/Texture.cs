@@ -8,9 +8,11 @@ public class Texture : IDisposable
 {
     private int _handle;
     private bool _disposed;
+    public string Path { get; private set; }
 
     public Texture(string path)
     {
+        Path = path;
         _handle = GL.GenTexture();
         
         Use();

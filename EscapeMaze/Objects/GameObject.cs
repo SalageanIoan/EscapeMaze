@@ -14,6 +14,7 @@ public class GameObject : IDisposable
     public float Alpha { get; set; }
     public bool IsRotating { get; set; }
     public bool IsFadingOut { get; set; }
+    public bool IsOpening { get; set; }
     public Texture? Texture { get; set; }
 
     public GameObject(string verticesFilePath, Vector3 position, string texturePath)
@@ -44,7 +45,7 @@ public class GameObject : IDisposable
     {
         if (IsRotating)
         {
-            Rotation = new Vector3(Rotation.X, Rotation.Y + deltaTime, Rotation.Z);
+            Rotation = new Vector3(0, Rotation.Y + deltaTime * 5.0f, 0);
         }
 
         if (IsFadingOut)
@@ -60,8 +61,8 @@ public class GameObject : IDisposable
     public Matrix4 GetModelMatrix()
     {
         Matrix4 model = Matrix4.CreateScale(Scale);
-        model = Matrix4.CreateRotationX(Rotation.X) * Matrix4.CreateRotationY(Rotation.Y) * Matrix4.CreateRotationZ(Rotation.Z) * model;
-        model = Matrix4.CreateTranslation(Position) * model;
+        model = model * Matrix4.CreateRotationX(Rotation.X) * Matrix4.CreateRotationY(Rotation.Y) * Matrix4.CreateRotationZ(Rotation.Z);
+        model = model * Matrix4.CreateTranslation(Position);
         return model;
     }
 

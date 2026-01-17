@@ -13,10 +13,14 @@ public class Level1Scene : IScene
     private Camera? _camera;
     private InputHandler? _inputHandler;
     private Shader? _shader;
-    private GameObject? _cube;
+    private GameObject? _key;
+    private List<GameObject> _walls = new ();
     private GameObject? _floor;
     private bool _shouldChangeScene;
     private IScene? _nextScene;
+    private bool _hasKey;
+    private GameObject? _door;
+    private Vector3 _doorStartPosition;
 
     public void Initialize(int windowWidth, int windowHeight)
     {
@@ -33,8 +37,35 @@ public class Level1Scene : IScene
         string fragmentShaderSource = ShaderLoader.LoadShaderSource("Shaders/fragment_shader.txt");
         _shader = new Shader(vertexShaderSource, fragmentShaderSource);
 
-        _cube = new GameObject("Data/cube_vertices.txt", Vector3.Zero, "Data/UI/key.png");
         _floor = new GameObject("Data/floor_vertices.txt", Vector3.Zero, "Data/UI/floor.png");
+        
+        int[,] mazeLayout = new [,]
+        {
+            {1, 1, 1, 1, 1, 2, 1, 1, 1, 1},
+            {1, 0, 0, 0, 1, 0, 0, 0, 0, 1},
+            {1, 0, 1, 0, 1, 0, 1, 1, 0, 1},
+            {1, 0, 1, 0, 0, 0, 1, 0, 0, 1},
+            {1, 0, 1, 1, 1, 1, 1, 0, 1, 1},
+            {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+            {1, 1, 1, 0, 1, 1, 1, 1, 0, 1},
+            {1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+            {1, 0, 1, 0, 0, 0, 1, 1, 0, 1},
+            {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+        };
+
+        _walls = MazeGenerator.GenerateMaze(mazeLayout);
+        foreach (var wall in _walls)
+        {
+            if (wall.Texture != null && wall.Texture.Path.Contains("door.png"))
+            {
+                _door = wall;
+                _doorStartPosition = _door.Position;
+                break;
+            }
+        }
+
+        _key = new GameObject("Data/cube_vertices.txt", new Vector3(-0.5f, 0, 0.5f), "Data/UI/key.png");
+        _key.Scale = new Vector3(0.5f);
     }
 
     public void Update(FrameEventArgs args, KeyboardState keyboardState, bool isFocused)
@@ -50,26 +81,52 @@ public class Level1Scene : IScene
             _nextScene = new MenuScene();
         }
 
-        _inputHandler.ProcessKeyboard(keyboardState, (float)args.Time);
+        _inputHandler.ProcessKeyboard(keyboardState, (float)args.Time, _walls);
 
-        if (_inputHandler.EPressed && _cube != null)
+        if (_inputHandler.EPressed)
         {
-            var ray = new Ray(_camera.Position, _camera.Front);
-            var boundingBox = new BoundingBox(_cube.Position - new Vector3(0.5f), _cube.Position + new Vector3(0.5f));
-            if (Intersects(ray, boundingBox))
+            if (_key != null)
             {
-                _cube.IsRotating = true;
-                _cube.IsFadingOut = true;
+                var ray = new Ray(_camera.Position, _camera.Front);
+                Vector3 extents = new Vector3(0.5f) * _key.Scale; 
+                var boundingBox = new BoundingBox(_key.Position - extents, _key.Position + extents);
+                if (Intersects(ray, boundingBox))
+                {
+                    _key.IsRotating = true;
+                    _key.IsFadingOut = true;
+                }
+            }
+            else if (_hasKey && _door != null && !_door.IsOpening)
+            {
+                var ray = new Ray(_camera.Position, _camera.Front);
+                var boundingBox = new BoundingBox(_door.Position - new Vector3(0.5f), _door.Position + new Vector3(0.5f));
+                if (Intersects(ray, boundingBox))
+                {
+                    _door.IsOpening = true;
+                }
             }
         }
 
-        _cube?.Update((float)args.Time);
-        _floor?.Update((float)args.Time);
-
-        if (_cube?.Alpha == 0)
+        if (_door != null && _door.IsOpening)
         {
-            _cube.Dispose();
-            _cube = null;
+            if (_door.Position.X > _doorStartPosition.X - 1.0f)
+            {
+                _door.Position -= new Vector3((float)args.Time, 0, 0);
+            }
+        }
+
+        _key?.Update((float)args.Time);
+        _floor?.Update((float)args.Time);
+        foreach (var wall in _walls)
+        {
+            wall.Update((float)args.Time);
+        }
+
+        if (_key?.Alpha == 0)
+        {
+            _key.Dispose();
+            _key = null;
+            _hasKey = true;
         }
     }
 
@@ -149,13 +206,22 @@ public class Level1Scene : IScene
             _floor.Draw();
         }
 
-        if (_cube != null)
+        foreach (var wall in _walls)
         {
-            _cube.Texture?.Use();
+            wall.Texture?.Use();
             _shader.SetBool("useTexture", true);
-            _shader.SetMatrix4("model", _cube.GetModelMatrix());
-            _shader.SetFloat("alpha", _cube.Alpha);
-            _cube.Draw();
+            _shader.SetMatrix4("model", wall.GetModelMatrix());
+            _shader.SetFloat("alpha", wall.Alpha);
+            wall.Draw();
+        }
+
+        if (_key != null)
+        {
+            _key.Texture?.Use();
+            _shader.SetBool("useTexture", true);
+            _shader.SetMatrix4("model", _key.GetModelMatrix());
+            _shader.SetFloat("alpha", _key.Alpha);
+            _key.Draw();
         }
     }
 
@@ -179,8 +245,13 @@ public class Level1Scene : IScene
 
     public void Unload()
     {
-        _cube?.Dispose();
+        _key?.Dispose();
         _floor?.Dispose();
+        foreach (var wall in _walls)
+        {
+            wall.Dispose();
+        }
+        _walls.Clear();
         _shader?.Dispose();
     }
 

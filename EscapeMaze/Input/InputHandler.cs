@@ -1,5 +1,7 @@
 using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using EscapeMaze.Objects;
+using System.Collections.Generic;
 
 namespace EscapeMaze.Input;
 
@@ -10,10 +12,11 @@ public class InputHandler
     private float _mouseSensitivity = 0.1f;
     private Vector2? _lastMousePosition;
 
-    private bool _wPressed;
-    private bool _aPressed;
-    private bool _sPressed;
-    private bool _dPressed;
+    private float _verticalVelocity;
+    private const float Gravity = 15.0f;
+    private const float JumpForce = 5.0f;
+    private const float PlayerRadius = 0.2f;
+    private const float GroundLevel = 0.0f;
 
     public bool EPressed { get; private set; }
 
@@ -22,7 +25,7 @@ public class InputHandler
         _camera = camera;
     }
 
-    public void ProcessKeyboard(KeyboardState input, float deltaTime)
+    public void ProcessKeyboard(KeyboardState input, float deltaTime, List<GameObject> walls)
     {
         EPressed = input.IsKeyDown(Keys.E);
 
@@ -34,57 +37,76 @@ public class InputHandler
         right.Y = 0;
         right = Vector3.Normalize(right);
 
-        if (input.IsKeyDown(Keys.W))
+        Vector3 moveDir = Vector3.Zero;
+        if (input.IsKeyDown(Keys.W)) moveDir += front;
+        if (input.IsKeyDown(Keys.S)) moveDir -= front;
+        if (input.IsKeyDown(Keys.A)) moveDir -= right;
+        if (input.IsKeyDown(Keys.D)) moveDir += right;
+
+        if (moveDir.LengthSquared > 0)
         {
-            if (!_wPressed)
-            {
-                _wPressed = true;
-            }
-            _camera.Position += front * _cameraSpeed * deltaTime;
-        }
-        else if (_wPressed)
-        {
-            _wPressed = false;
+            moveDir = Vector3.Normalize(moveDir);
         }
 
-        if (input.IsKeyDown(Keys.S))
+        Vector3 proposedMove = moveDir * _cameraSpeed * deltaTime;
+
+        if (!CheckCollision(_camera.Position + new Vector3(proposedMove.X, 0, 0), walls))
         {
-            if (!_sPressed)
-            {
-                _sPressed = true;
-            }
-            _camera.Position -= front * _cameraSpeed * deltaTime;
-        }
-        else if (_sPressed)
-        {
-            _sPressed = false;
+            _camera.Position += new Vector3(proposedMove.X, 0, 0);
         }
 
-        if (input.IsKeyDown(Keys.A))
+        if (!CheckCollision(_camera.Position + new Vector3(0, 0, proposedMove.Z), walls))
         {
-            if (!_aPressed)
-            {
-                _aPressed = true;
-            }
-            _camera.Position -= right * _cameraSpeed * deltaTime;
-        }
-        else if (_aPressed)
-        {
-            _aPressed = false;
+            _camera.Position += new Vector3(0, 0, proposedMove.Z);
         }
 
-        if (input.IsKeyDown(Keys.D))
+        if (input.IsKeyDown(Keys.Space) && _camera.Position.Y <= GroundLevel + 0.05f)
         {
-            if (!_dPressed)
+            _verticalVelocity = JumpForce;
+        }
+
+        _verticalVelocity -= Gravity * deltaTime;
+        _camera.Position += new Vector3(0, _verticalVelocity * deltaTime, 0);
+
+        if (_camera.Position.Y < GroundLevel)
+        {
+            _camera.Position = new Vector3(_camera.Position.X, GroundLevel, _camera.Position.Z);
+            _verticalVelocity = 0;
+        }
+    }
+
+    private bool CheckCollision(Vector3 targetPos, List<GameObject> walls)
+    {
+        float minX = targetPos.X - PlayerRadius;
+        float maxX = targetPos.X + PlayerRadius;
+        float minZ = targetPos.Z - PlayerRadius;
+        float maxZ = targetPos.Z + PlayerRadius;
+
+        
+        float playerMinY = targetPos.Y - 0.5f;
+        float playerMaxY = targetPos.Y + 0.5f;
+
+        foreach (var wall in walls)
+        {
+            if (wall.IsOpening) continue;
+
+            float wMinX = wall.Position.X - 0.5f;
+            float wMaxX = wall.Position.X + 0.5f;
+            float wMinZ = wall.Position.Z - 0.5f;
+            float wMaxZ = wall.Position.Z + 0.5f;
+            float wMinY = wall.Position.Y - 0.5f;
+            float wMaxY = wall.Position.Y + 0.5f;
+
+            bool overlapX = maxX > wMinX && minX < wMaxX;
+            bool overlapZ = maxZ > wMinZ && minZ < wMaxZ;
+            bool overlapY = playerMaxY > wMinY && playerMinY < wMaxY;
+
+            if (overlapX && overlapZ && overlapY)
             {
-                _dPressed = true;
+                return true;
             }
-            _camera.Position += right * _cameraSpeed * deltaTime;
         }
-        else if (_dPressed)
-        {
-            _dPressed = false;
-        }
+        return false;
     }
 
     public void ProcessMouse(float mouseX, float mouseY)
