@@ -21,4 +21,8 @@
       </None>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\EscapeMaze.Abstraction\EscapeMaze.Abstraction.csproj" />
+    </ItemGroup>
+
 </Project>

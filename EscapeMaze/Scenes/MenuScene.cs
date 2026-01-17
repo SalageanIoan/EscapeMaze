@@ -26,7 +26,7 @@ public class MenuScene : IScene
         _windowWidth = windowWidth;
         _windowHeight = windowHeight;
 
-        GL.ClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        GL.ClearColor(0.5f, 0.5f, 0.5f, 1.0f);
         GL.Disable(EnableCap.DepthTest);
 
 

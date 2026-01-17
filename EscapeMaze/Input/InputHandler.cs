@@ -14,7 +14,7 @@ public class InputHandler
 
     private float _verticalVelocity;
     private const float Gravity = 15.0f;
-    private const float JumpForce = 5.0f;
+    private const float JumpForce = 3.0f;
     private const float PlayerRadius = 0.2f;
     private const float GroundLevel = 0.0f;
 

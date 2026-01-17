@@ -62,7 +62,8 @@ public class Game : GameWindow
             }
         }
 
-        if (_currentScene is MenuScene menuScene && menuScene.ShouldQuit)
+        if ((_currentScene is MenuScene menuScene && menuScene.ShouldQuit) || 
+            (_currentScene is GameOverScene gameOverScene && gameOverScene.ShouldQuit))
         {
             Close();
         }
